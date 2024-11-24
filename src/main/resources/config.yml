@@ -40,12 +40,12 @@ Lores:
 
 PLAYER:
   Drop: true
-  Chance: 100
+  Chance: 0
   Require-Permission: false
 
 ZOMBIE:
   Drop: true
-  Chance: 100
+  Chance: 0
   Sound: "default"
 
 WITHER_SKELETON:

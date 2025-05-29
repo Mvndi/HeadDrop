@@ -10,6 +10,8 @@ import me.rrs.headdrop.hook.WorldGuardSupport;
 import me.rrs.headdrop.util.Embed;
 import me.rrs.headdrop.util.ItemUtils;
 import me.rrs.headdrop.util.SkullCreator;
+import net.mvndicraft.mvndiequipment.ItemManager;
+import net.mvndicraft.mvndiequipment.MeleeWeapon;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -198,6 +200,35 @@ public class EntityDeath implements Listener {
     protected void handleEntityDrop(EntityDeathEvent event, String entityType, Supplier<ItemStack> itemSupplier) {
         float baseChance = config.getFloat(entityType + ".Chance");
         float lootBonus = (float) ActionContext.getLootBonus();
+
+        if (event.getDamageSource().getCausingEntity().getType() == EntityType.PLAYER) {
+            Player attacker = (Player) event.getDamageSource().getCausingEntity();
+            ItemStack item = attacker.getInventory().getItemInMainHand();
+            if (item.getType() != Material.AIR) {
+                String id  = ItemManager.getInstance().getId(item);
+                if (id != null && ItemManager.getInstance().getItem(id) instanceof MeleeWeapon meleeWeapon) {
+                    switch (meleeWeapon.category) {
+                        case GREAT_AXE:
+                        case ULTRA_GREATSWORD:
+                            lootBonus += 50;
+                            break;
+                        case GREATSWORD:
+                            lootBonus += 25;
+                            break;
+                        case GREAT_HAMMER:
+                        case HAMMER:
+                        case WHIP:
+                        case FIST:
+                            baseChance = 0;
+                            lootBonus = 0;
+                            break;
+                        default:
+                            lootBonus += 10;
+                            break;
+                    }
+                }
+            }
+        }
 
         float totalChance = Math.min(baseChance + lootBonus, 100.0F);
         float randomValue = ThreadLocalRandom.current().nextFloat() * 100.0F;

@@ -201,7 +201,7 @@ public class EntityDeath implements Listener {
         float baseChance = config.getFloat(entityType + ".Chance");
         float lootBonus = (float) ActionContext.getLootBonus();
 
-        if (event.getDamageSource().getCausingEntity().getType() == EntityType.PLAYER) {
+        if (event.getDamageSource().getCausingEntity() != null && event.getDamageSource().getCausingEntity().getType() == EntityType.PLAYER) {
             Player attacker = (Player) event.getDamageSource().getCausingEntity();
             ItemStack item = attacker.getInventory().getItemInMainHand();
             if (item.getType() != Material.AIR) {

@@ -197,6 +197,16 @@ public class EntityDeath implements Listener {
                 .contains(entity.getWorld().getName());
     }
 
+    private String getVariantKey(Object entity) {
+        try {
+            Object variant = entity.getClass().getMethod("getVariant").invoke(entity);
+            return variant instanceof org.bukkit.Keyed k ? k.getKey().getKey() : null;
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+
     protected void handleEntityDrop(EntityDeathEvent event, String entityType, Supplier<ItemStack> itemSupplier) {
         float baseChance = config.getFloat(entityType + ".Chance");
         float lootBonus = (float) ActionContext.getLootBonus();
@@ -276,7 +286,7 @@ public class EntityDeath implements Listener {
         }
     }
 
-    private void populateEntityActions() {
+    public void populateEntityActions() {
         try {
             entityActions.put(EntityType.PLAYER, event -> {
                 if (!event.getEntity().hasPermission("headdrop.player")) {
@@ -456,16 +466,15 @@ public class EntityDeath implements Listener {
                     }));
         }catch (NoSuchFieldError | IllegalArgumentException ignored){}
         try {
-            entityActions.put(EntityType.FROG, event -> handleEntityDrop(event, "FROG",
-                    () -> {
-                        Frog frog = (Frog) event.getEntity();
-                        return switch (frog.getVariant().toString()) {
-                            case "TEMPERATE" -> EntityHead.FROG_TEMPERATE.getSkull();
-                            case "WARM" -> EntityHead.FROG_WARM.getSkull();
-                            case "COLD" -> EntityHead.FROG_COLD.getSkull();
-                            default -> throw new IllegalStateException("Unexpected value: " + frog.getVariant());
-                        };
-                    }));
+            entityActions.put(EntityType.FROG, event ->
+                    handleEntityDrop(event, "FROG", () -> {
+                        String v = getVariantKey(event.getEntity());
+
+                        return "warm".equals(v) ? EntityHead.FROG_WARM.getSkull()
+                                : "cold".equals(v) ? EntityHead.FROG_COLD.getSkull()
+                                : EntityHead.FROG_TEMPERATE.getSkull();
+                    })
+            );
         }catch (NoSuchFieldError | IllegalArgumentException ignored){}
         try {
             entityActions.put(EntityType.HORSE, event -> handleEntityDrop(event, "HORSE",
@@ -608,53 +617,37 @@ public class EntityDeath implements Listener {
         }catch (NoSuchFieldError | IllegalArgumentException ignored){}
 
         try {
-            entityActions.put(EntityType.CHICKEN, event -> handleEntityDrop(event, "CHICKEN",
-                    () -> {
-                        try {
-                            Chicken chicken = (Chicken) event.getEntity();
-                            return switch (chicken.getVariant().toString()) {
-                                case "COLD" -> EntityHead.CHICKEN_COLD.getSkull();
-                                case "WARM" -> EntityHead.CHICKEN_WARM.getSkull();
-                                case "TEMPERATE" -> EntityHead.CHICKEN_TEMPERATE.getSkull();
-                                default -> throw new IllegalStateException("Unexpected value: " + chicken.getVariant());
-                            };
-                        } catch (NoSuchMethodError | IllegalArgumentException e) {
-                            return EntityHead.CHICKEN_TEMPERATE.getSkull();
-                        }
-                    }));
+            entityActions.put(EntityType.CHICKEN, event ->
+                    handleEntityDrop(event, "CHICKEN", () -> {
+                        String v = getVariantKey(event.getEntity());
+
+                        return "cold".equals(v) ? EntityHead.CHICKEN_COLD.getSkull()
+                                : "warm".equals(v) ? EntityHead.CHICKEN_WARM.getSkull()
+                                : EntityHead.CHICKEN_TEMPERATE.getSkull();
+                    })
+            );
         }catch (NoSuchFieldError | IllegalArgumentException ignored){}
         try {
-            entityActions.put(EntityType.COW, event -> handleEntityDrop(event, "COW",
-                    () -> {
-                        try {
-                            Cow cow = (Cow) event.getEntity();
-                            return switch (cow.getVariant().toString()) {
-                                case "COLD" -> EntityHead.COW_COLD.getSkull();
-                                case "WARM" -> EntityHead.COW_WARM.getSkull();
-                                case "TEMPERATE" -> EntityHead.COW_TEMPERATE.getSkull();
-                                default ->
-                                        throw new IllegalStateException("Unexpected value: " + cow.getVariant());
-                            };
-                        } catch (NoSuchMethodError | IllegalArgumentException e) {
-                            return EntityHead.COW_TEMPERATE.getSkull();
-                        }
-                    }));
+            entityActions.put(EntityType.COW, event ->
+                    handleEntityDrop(event, "COW", () -> {
+                        String v = getVariantKey(event.getEntity());
+
+                        return "cold".equals(v) ? EntityHead.COW_COLD.getSkull()
+                                : "warm".equals(v) ? EntityHead.COW_WARM.getSkull()
+                                : EntityHead.COW_TEMPERATE.getSkull();
+                    })
+            );
         }catch (NoSuchFieldError | IllegalArgumentException ignored){}
         try {
-            entityActions.put(EntityType.PIG, event -> handleEntityDrop(event, "PIG",
-                    () -> {
-                        try {
-                            Pig pig = (Pig) event.getEntity();
-                            return switch (pig.getVariant().toString()){
-                                case "COLD" -> EntityHead.PIG_COLD.getSkull();
-                                case "WARM" -> EntityHead.PIG_WARM.getSkull();
-                                case "TEMPERATE" -> EntityHead.PIG_TEMPERATE.getSkull();
-                                default -> throw new IllegalStateException("Unexpected value: " + pig.getVariant());
-                            };
-                        } catch (NoSuchMethodError | IllegalArgumentException e) {
-                            return EntityHead.PIG_TEMPERATE.getSkull();
-                        }
-                    }));
+            entityActions.put(EntityType.PIG, event ->
+                    handleEntityDrop(event, "PIG", () -> {
+                        String v = getVariantKey(event.getEntity());
+
+                        return "cold".equals(v) ? EntityHead.PIG_COLD.getSkull()
+                                : "warm".equals(v) ? EntityHead.PIG_WARM.getSkull()
+                                : EntityHead.PIG_TEMPERATE.getSkull();
+                    })
+            );
         }catch (NoSuchFieldError | IllegalArgumentException ignored){}
         try {entityActions.put(EntityType.CREAKING, event -> handleEntityDrop(event, "CREAKING", EntityHead.CREAKING::getSkull));
         }catch (NoSuchFieldError | IllegalArgumentException ignored){}
@@ -773,6 +766,16 @@ public class EntityDeath implements Listener {
         try {entityActions.put(EntityType.valueOf("SNOWMAN"), event -> handleEntityDrop(event, "SNOW_GOLEM", EntityHead.SNOWMAN::getSkull));
         }catch (NoSuchFieldError | IllegalArgumentException ignored){}
         try {entityActions.put(EntityType.HAPPY_GHAST, event -> handleEntityDrop(event, "HAPPY_GHAST", EntityHead.HAPPY_GHAST::getSkull));
+        }catch (NoSuchFieldError | IllegalArgumentException ignored){}
+        try {entityActions.put(EntityType.COPPER_GOLEM, event -> handleEntityDrop(event, "COPPER_GOLEM", EntityHead.COPPER_GOLEM::getSkull));
+        }catch (NoSuchFieldError | IllegalArgumentException ignored){}
+        try {entityActions.put(EntityType.NAUTILUS, event -> handleEntityDrop(event, "NAUTILUS", EntityHead.NAUTILUS::getSkull));
+        }catch (NoSuchFieldError | IllegalArgumentException ignored){}
+        try {entityActions.put(EntityType.PARCHED, event -> handleEntityDrop(event, "PARCHED", EntityHead.PARCHED::getSkull));
+        }catch (NoSuchFieldError | IllegalArgumentException ignored){}
+        try {entityActions.put(EntityType.ZOMBIE_NAUTILUS, event -> handleEntityDrop(event, "ZOMBIE_NAUTILUS", EntityHead.ZOMBIE_NAUTILUS::getSkull));
+        }catch (NoSuchFieldError | IllegalArgumentException ignored){}
+        try {entityActions.put(EntityType.CAMEL_HUSK, event -> handleEntityDrop(event, "CAMEL_HUSK", EntityHead.CAMEL_HUSK::getSkull));
         }catch (NoSuchFieldError | IllegalArgumentException ignored){}
     }
 
